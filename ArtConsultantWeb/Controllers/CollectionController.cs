@@ -27,7 +27,7 @@ namespace ArtConsultantWeb.Controllers
                     "LEFT OUTER JOIN CollectionPaintings AS p " +
                     "ON c.CollectionId = p.CollectionId " +
                     "LEFT OUTER JOIN Followers AS f " +
-                    "ON g.UserId = f.FolloweeId " +
+                    "ON c.UserId = f.FolloweeId " +
                     "WHERE c.UserId = u.UserId ";
                 if (keyword != "")
                 {
