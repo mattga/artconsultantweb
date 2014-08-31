@@ -39,7 +39,7 @@ namespace ArtConsultantWeb.Controllers
                             "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"" + keyword + " %\") ";
                 }
                 query += "GROUP BY g.GalleryId " +
-                    "HAVING PaintingCount > 0)";
+                    "HAVING PaintingCount > 0";
                 Gallery g;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
