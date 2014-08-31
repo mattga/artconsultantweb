@@ -22,7 +22,24 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL GetCollectionsWithSearchInfo(" + (keyword == "" ? "NULL" : "\"" + keyword + "\"") + ")";
+                string query = "SELECT c.*, u.*, COUNT(DISTINCT(p.PaintingId)) AS PaintingCount, COUNT(DISTINCT(f.FollowerId)) AS FollowerCount " +
+                    "FROM Users AS u, Collections AS c " +
+                    "LEFT OUTER JOIN CollectionPaintings AS p " +
+                    "ON c.CollectionId = p.CollectionId " +
+                    "LEFT OUTER JOIN Followers AS f " +
+                    "ON g.UserId = f.FolloweeId " +
+                    "WHERE c.UserId = u.UserId ";
+                if (keyword != "")
+                {
+                    query = "AND (c.Name LIKE \"%" + keyword + "\" " +
+                            "OR c.Name LIKE \"%" + keyword + "%\" " +
+                            "OR c.Name LIKE \"" + keyword + "%\" " +
+                            "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"%" + keyword + "\" " +
+                            "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"%" + keyword + "%\" " +
+                            "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"" + keyword +" %\") ";
+                }
+                query += "GROUP BY c.CollectionId " +
+                    "HAVING PaintingCount > 0)";
                 Collection c;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
@@ -69,9 +86,10 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL GetCollectionById(\"" + id + "\")";
+                string query = "SELECT * " + 
+                    "FROM Collections " +
+                    "WHERE CollectionId = " + id;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
-
                 if (reader.Read())
                 {
                     c.CollectionId = DataUtils.getInt32(reader, "CollectionId");
@@ -82,7 +100,12 @@ namespace ArtConsultantWeb.Controllers
                     c.Paintings = new List<Painting>();
                     c.User = new User();
 
-                    if (reader.NextResult() && reader.Read())
+                    query = "SELECT u.* " +
+                        "FROM Users AS u, Collections AS c " +
+                         "WHERE u.UserId = c.UserId AND c.CollectionId = " + id;
+                    reader.Close();
+                    reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
+                    if (reader.Read())
                     {
                         c.User.UserId = DataUtils.getInt32(reader, "UserId");
                         c.User.Username = DataUtils.getString(reader, "Username");
@@ -94,44 +117,47 @@ namespace ArtConsultantWeb.Controllers
                         c.User.Country = DataUtils.getString(reader, "Country");
                         c.User.IsFaceBook = (DataUtils.getInt32(reader, "IsFaceBook") == 0 ? false : true);
 
-                        if (reader.NextResult())
+                        query = "SELECT p.*, a.*, u.*, COUNT(DISTINCT(pl.UserId)) AS LikeCount " +
+                            "FROM (Collections AS c, CollectionPaintings AS cp, Paintings AS p, Users AS u, Artists AS a) LEFT JOIN PaintingLikes AS pl ON pl.PaintingId = p.PaintingId " +
+                            "WHERE cp.CollectionId = c.CollectionId AND p.PaintingId = cp.PaintingId AND p.ArtistId = a.ArtistId AND a.UserId = u.UserId AND c.CollectionId = " + id + " " +
+                            "GROUP BY p.PaintingId";
+                        reader.Close();
+                        reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
+                        Painting p;
+
+                        while (reader.Read())
                         {
-                            Painting p;
+                            p = new Painting();
+                            p.PaintingId = DataUtils.getInt32(reader, "PaintingId");
+                            p.Name = DataUtils.getString(reader, "Name");
+                            p.Date = reader.GetDateTime(reader.GetOrdinal("Date"));
+                            p.Dimension = DataUtils.getString(reader, "Dimension");
+                            p.Url = DataUtils.getString(reader, "Url");
+                            p.ZoomUrl = DataUtils.getString(reader, "ZoomUrl");
+                            p.RoomUrl = DataUtils.getString(reader, "RoomUrl");
+                            p.Story = DataUtils.getString(reader, "Story");
+                            p.CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate"));
+                            p.Price = DataUtils.getInt32(reader, "Price");
+                            p.Medium = DataUtils.getString(reader, "Medium");
+                            p.ArtistBio = DataUtils.getString(reader, "ArtistBio");
+                            p.ArtistName = DataUtils.getString(reader, "ArtistName");
+                            p.LikeCount = DataUtils.getInt32(reader, "LikeCount");
 
-                            while (reader.Read())
-                            {
-                                p = new Painting();
-                                p.PaintingId = DataUtils.getInt32(reader, "PaintingId");
-                                p.Name = DataUtils.getString(reader, "Name");
-                                p.Date = reader.GetDateTime(reader.GetOrdinal("Date"));
-                                p.Dimension = DataUtils.getString(reader, "Dimension");
-                                p.Url = DataUtils.getString(reader, "Url");
-                                p.ZoomUrl = DataUtils.getString(reader, "ZoomUrl");
-                                p.RoomUrl = DataUtils.getString(reader, "RoomUrl");
-                                p.Story = DataUtils.getString(reader, "Story");
-                                p.CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate"));
-                                p.Price = DataUtils.getInt32(reader, "Price");
-                                p.Medium = DataUtils.getString(reader, "Medium");
-                                p.ArtistBio = DataUtils.getString(reader, "ArtistBio");
-                                p.ArtistName = DataUtils.getString(reader, "ArtistName");
-                                p.LikeCount = DataUtils.getInt32(reader, "LikeCount");
+                            p.Artist = new User();
+                            p.Artist.UserId = DataUtils.getInt32(reader, "UserId");
+                            p.Artist.Username = DataUtils.getString(reader, "Username");
+                            p.Artist.CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate"));
+                            p.Artist.FirstName = DataUtils.getString(reader, "FirstName");
+                            p.Artist.LastName = DataUtils.getString(reader, "LastName");
+                            p.Artist.City = DataUtils.getString(reader, "City");
+                            p.Artist.State = DataUtils.getString(reader, "State");
+                            p.Artist.Country = DataUtils.getString(reader, "Country");
 
-                                p.Artist = new User();
-                                p.Artist.UserId = DataUtils.getInt32(reader, "UserId");
-                                p.Artist.Username = DataUtils.getString(reader, "Username");
-                                p.Artist.CreatedDate = reader.GetDateTime(reader.GetOrdinal("CreatedDate"));
-                                p.Artist.FirstName = DataUtils.getString(reader, "FirstName");
-                                p.Artist.LastName = DataUtils.getString(reader, "LastName");
-                                p.Artist.City = DataUtils.getString(reader, "City");
-                                p.Artist.State = DataUtils.getString(reader, "State");
-                                p.Artist.Country = DataUtils.getString(reader, "Country");
-
-                                c.Paintings.Add(p);
-                            }
-
-                            c.Status.Code = StatusCode.OK;
-                            c.Status.Description = DataUtils.OK;
+                            c.Paintings.Add(p);
                         }
+
+                        c.Status.Code = StatusCode.OK;
+                        c.Status.Description = DataUtils.OK;
                     }
                 }
                 else
@@ -156,17 +182,24 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL AddPaintingToCollection(\"" + painting.PaintingId + "\",\"" + id + "\")";
+                string query = "SELECT * " + 
+                    "FROM CollectionPaintings " +
+                    "WHERE CollectionId=\"" + id + "\" AND PaintingId=\"" + painting.PaintingId + "\"";
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
-                if (reader.Read())
+                if (reader.HasRows)
                 {
-                    if (reader.GetInt32(0) < 0)
-                    {
-                        bm.Status.Code = StatusCode.AlreadyExists;
-                        bm.Status.Description = "Collection already contains that Painting.";
-                    }
-                    else
+                    bm.Status.Code = StatusCode.AlreadyExists;
+                    bm.Status.Description = "Collection already contains that Painting.";
+                }
+                else
+                {
+                    query = "INSERT INTO CollectionPaintings " +
+                        "VALUES (\"" + id + "\",\"" + painting.PaintingId + "\")";
+                    reader.Close();
+                    reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
+
+                    if (reader.RecordsAffected > 0)
                     {
                         bm.Status.Code = StatusCode.OK;
                         bm.Status.Description = "Success adding Painting.";
@@ -189,21 +222,19 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL RemovePaintingFromCollection(\"" + painting.PaintingId + "\",\"" + id + "\")";
+                string query = "DELETE FROM CollectionPaintings " +
+                    "WHERE CollectionId = " + id + " AND PaintingId = " + painting.PaintingId;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
-                if (reader.Read())
+                if (reader.RecordsAffected > 0)
                 {
-                    if (reader.GetInt32(0) < 0)
-                    {
-                        bm.Status.Code = StatusCode.AlreadyExists;
-                        bm.Status.Description = "No painting to remove.";
-                    }
-                    else
-                    {
-                        bm.Status.Code = StatusCode.OK;
-                        bm.Status.Description = "Success removing Painting.";
-                    }
+                    bm.Status.Code = StatusCode.OK;
+                    bm.Status.Description = "Success removing Painting.";
+                }
+                else
+                {
+                    bm.Status.Code = StatusCode.NotFound;
+                    bm.Status.Description = "No painting to remove.";
                 }
                 DataUtils.closeConnection(connection);
             }

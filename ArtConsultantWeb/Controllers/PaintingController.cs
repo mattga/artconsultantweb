@@ -22,11 +22,33 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL GetPaintingsWithSearchInfo(" 
-                    + (keyword == "" ? "NULL" : "\""+keyword+"\"") + ","
-                    + (minPrice == 0 ? "NULL" : "\"" + minPrice + "\"") + ","
-                    + (maxPrice == int.MaxValue ? "NULL" : "\"" + maxPrice + "\"") + ","
-                    + (medium == "" ? "NULL" : "\"" + medium + "\"") + ")";
+                string query = "  SELECT p.*, a.*, u.*, COUNT(pl.UserId) AS LikeCount " +
+                    "FROM Users AS u, Artists AS a, Paintings AS p LEFT JOIN PaintingLikes AS pl " +
+                    "ON p.PaintingId = pl.PaintingId " +
+                    "WHERE p.ArtistId = a.ArtistId AND u.UserId = a.UserId ";
+                if (keyword != "")
+                {
+                  query += "AND (p.Name LIKE \"% " + keyword + "\" " +
+                    "OR p.Name LIKE \"%" + keyword + "%\" " +
+                    "OR p.Name LIKE \"" + keyword + "%\" " +
+                    "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"%" + keyword + "\" " +
+                    "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"%" + keyword + "%\" " +
+                    "OR CONCAT(u.FirstName,\" \",u.LastName) LIKE \"" + keyword + "%\") ";
+                }
+                if (minPrice > 0)
+                {
+                    query += "AND p.Price >= " + minPrice + " ";
+                }
+                if (maxPrice < int.MaxValue)
+                {
+                    query += "AND p.Price <= " + maxPrice + " ";
+                }
+                if (medium != "")
+                {
+                    query += "AND medium = \"" + medium + "\" ";
+                }
+                query += "GROUP BY p.PaintingId ";
+                query += "ORDER BY COUNT(pl.UserId) DESC";
                 Painting p;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
@@ -76,21 +98,18 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL IsPaintingLikedByUser(\"" + id + "\",\"" + UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + UserId + "\")";
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
                 {
-                    if (reader.GetInt32(0) < 0)
-                    {
-                        bm.Status.Code = StatusCode.OK;
-                        bm.Status.Description = "Painting liked.";
-                    }
-                    else
-                    {
-                        bm.Status.Code = StatusCode.NotFound;
-                        bm.Status.Description = "No like found.";
-                    }
+                    bm.Status.Code = StatusCode.OK;
+                    bm.Status.Description = "Painting liked.";
+                }
+                else
+                {
+                    bm.Status.Code = StatusCode.NotFound;
+                    bm.Status.Description = "No like found.";
                 }
                 DataUtils.closeConnection(connection);
             }
@@ -108,21 +127,21 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL LikePainting(\"" + id + "\",\"" + user.UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + user.UserId + "\")";
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
                 {
-                    if (reader.GetInt32(0) > 0)
-                    {
-                        bm.Status.Code = StatusCode.OK;
-                        bm.Status.Description = "Painting successfully liked.";
-                    }
-                    else
-                    {
-                        bm.Status.Code = StatusCode.AlreadyExists;
-                        bm.Status.Description = "Painting already liked.";
-                    }
+                    bm.Status.Code = StatusCode.AlreadyExists;
+                    bm.Status.Description = "Painting already liked.";
+                }
+                else
+                {
+                    query = "INSERT INTO PaintingLikes (UserId, PaintingId)" +
+                        "VALUES (" + user.UserId + "," + id + ")";
+                    DataUtils.executeQuery(connection, query);
+                    bm.Status.Code = StatusCode.OK;
+                    bm.Status.Description = "Painting successfully liked.";
                 }
                 DataUtils.closeConnection(connection);
             }
@@ -140,21 +159,21 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL UnlikePainting(\"" + id + "\",\"" + user.UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + user.UserId + "\")";
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
                 {
-                    if (reader.GetInt32(0) > 0)
-                    {
-                        bm.Status.Code = StatusCode.OK;
-                        bm.Status.Description = "Painting successfully unliked.";
-                    }
-                    else
-                    {
-                        bm.Status.Code = StatusCode.NotFound;
-                        bm.Status.Description = "No like found.";
-                    }
+                    query = "DELETE FROM PaintingLikes " +
+                        "WHERE UserId = " + user.UserId + " AND PaintingId = " + id + ")";
+                    DataUtils.executeQuery(connection, query);
+                    bm.Status.Code = StatusCode.OK;
+                    bm.Status.Description = "Painting successfully liked.";
+                }
+                else
+                {
+                    bm.Status.Code = StatusCode.AlreadyExists;
+                    bm.Status.Description = "Painting not liked.";
                 }
                 DataUtils.closeConnection(connection);
             }
@@ -172,7 +191,14 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "CALL GetGalleryForPainting(\"" + id + "\")";
+                string query = "  SELECT g.*, u.*, COUNT(DISTINCT(p.PaintingId)) AS PaintingCount " +
+                    "FROM Users AS u, Galleries AS g " +
+                    "LEFT OUTER JOIN GalleryPaintings AS p " +
+                    "ON p.GalleryId = p.GalleryId " +
+                    "WHERE g.UserId = u.UserId AND g.GalleryId IN  " +
+                      "(SELECT GalleryId " +
+                      "FROM GalleryPaintings " +
+                      "WHERE PaintingId = " + id + ")";
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
