@@ -63,7 +63,7 @@ namespace ArtConsultantWeb.Models
 
                     query = "SELECT c.*" +
                         "FROM Users AS u, Collections AS c" +
-                        "WHERE c.UserId = u.UserId AND IsCustom = 0 AND UserId = " + this.UserId;
+                        "WHERE c.UserId = u.UserId AND c.IsCustom = 0 AND c.UserId = " + this.UserId;
                     reader.Close();
                     reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
                     if (reader.Read())
