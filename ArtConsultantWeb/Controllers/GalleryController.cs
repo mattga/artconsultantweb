@@ -110,7 +110,7 @@ namespace ArtConsultantWeb.Controllers
 
                     query = "SELECT u.*, ac.* " +
                         "FROM Users AS u, Galleries AS g, ArtConsultants AS ac " +
-                        "WHERE u.UserId = g.UserId AND u.UserId = ac.UserId AND c.GalleryId = " + id;
+                        "WHERE u.UserId = g.UserId AND u.UserId = ac.UserId AND g.GalleryId = " + id;
                     reader.Close();
                     reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
                     if (reader.Read())
