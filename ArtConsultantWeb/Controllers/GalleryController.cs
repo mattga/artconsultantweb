@@ -57,6 +57,7 @@ namespace ArtConsultantWeb.Controllers
                     g.Country = DataUtils.getString(reader, "Country");
                     g.PaintingCount = DataUtils.getInt32(reader, "PaintingCount");
                     g.ArtConsultant = new User();
+                    g.Paintings = new List<Painting>();
 
                     g.ArtConsultant.UserId = g.UserId;
                     g.ArtConsultant.ImageUrl = DataUtils.getString(reader, "ImageUrl");
@@ -69,6 +70,19 @@ namespace ArtConsultantWeb.Controllers
                     g.ArtConsultant.Country = DataUtils.getString(reader, "Country");
                     g.ArtConsultant.IsFaceBook = (DataUtils.getInt32(reader, "IsFaceBook") == 0 ? false : true);
 
+                    query = "SELECT p.Url " +
+                            "FROM Galleries AS g, GalleryPaintings AS gp, Paintings AS p " +
+                            "WHERE gp.GalleryId = g.GalleryId AND p.PaintingId = gp.PaintingId AND g.GalleryId = " + g.GalleryId;
+                    reader.Close();
+                    reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
+                    Painting p;
+                    while (reader.Read())
+                    {
+                        p = new Painting();
+                        p.Url = DataUtils.getString(reader, "Url");
+
+                        g.Paintings.Add(p);
+                    }
                     g.Status.Code = StatusCode.OK;
                     g.Status.Description = DataUtils.OK;
 
