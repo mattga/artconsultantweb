@@ -68,15 +68,20 @@ namespace ArtConsultantWeb.Controllers
                     query = "SELECT p.Url " +
                             "FROM Collections AS c, CollectionPaintings AS cp, Paintings AS p " +
                             "WHERE cp.CollectionId = c.CollectionId AND p.PaintingId = cp.PaintingId AND c.CollectionId = " + c.CollectionId;
-                    reader.Close();
-                    reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
-                    Painting p;
-                    while (reader.Read())
-                    {
-                        p = new Painting();
-                        p.Url = DataUtils.getString(reader, "Url");
+                    MySqlConnection connection2 = DataUtils.getConnection();
 
-                        c.Paintings.Add(p);
+                    if (connection2 != null)
+                    {
+                        MySqlDataReader reader2 = (MySqlDataReader)DataUtils.executeQuery(connection2, query);
+                        Painting p;
+                        while (reader2.Read())
+                        {
+                            p = new Painting();
+                            p.Url = DataUtils.getString(reader2, "Url");
+
+                            c.Paintings.Add(p);
+                        }
+                        DataUtils.closeConnection(connection2);
                     }
 
                     c.Status.Code = StatusCode.OK;
