@@ -83,6 +83,7 @@ namespace ArtConsultantWeb.Controllers
 
                         g.Paintings.Add(p);
                     }
+
                     g.Status.Code = StatusCode.OK;
                     g.Status.Description = DataUtils.OK;
 
