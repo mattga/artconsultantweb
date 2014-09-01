@@ -61,8 +61,8 @@ namespace ArtConsultantWeb.Models
                     this.ImageUrl = DataUtils.getString(reader, "ImageUrl");
                     this.IsFaceBook = (DataUtils.getInt32(reader, "IsFaceBook") == 0 ? false : true);
 
-                    query = "SELECT c.*" +
-                        "FROM Users AS u, Collections AS c" +
+                    query = "SELECT c.* " +
+                        "FROM Users AS u, Collections AS c " +
                         "WHERE c.UserId = u.UserId AND c.IsCustom = 0 AND c.UserId = " + this.UserId;
                     reader.Close();
                     reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
@@ -76,8 +76,8 @@ namespace ArtConsultantWeb.Models
                         this.MyCollection.Name = DataUtils.getString(reader, "Name");
                         this.MyCollection.CollectionPicture = DataUtils.getString(reader, "CollectionPicture");
 
-                        query = "SELECT p.*, a.*, u1.*, COUNT(pl.UserId) AS LikeCount" +
-                            "FROM (Collections AS c, CollectionPaintings AS cp, Paintings AS p, Users AS u1, Users AS u2, Artists AS a) LEFT JOIN PaintingLikes AS pl ON pl.PaintingId = p.PaintingId" +
+                        query = "SELECT p.*, a.*, u1.*, COUNT(pl.UserId) AS LikeCount " +
+                            "FROM (Collections AS c, CollectionPaintings AS cp, Paintings AS p, Users AS u1, Users AS u2, Artists AS a) LEFT JOIN PaintingLikes AS pl ON pl.PaintingId = p.PaintingId " +
                             "WHERE cp.CollectionId = c.CollectionId AND p.PaintingId = cp.PaintingId AND p.ArtistId = a.ArtistId AND a.UserId = u1.UserId AND c.UserId = u2.UserId AND u2.UserId = " + this.UserId + " " +
                             "GROUP BY p.PaintingId";
                         reader.Close();
