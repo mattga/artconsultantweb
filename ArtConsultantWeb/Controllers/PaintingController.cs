@@ -98,7 +98,7 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=" + UserId;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
@@ -127,7 +127,7 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + user.UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=" + user.UserId;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())
@@ -159,7 +159,7 @@ namespace ArtConsultantWeb.Controllers
 
             if (connection != null)
             {
-                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=\"" + user.UserId + "\")";
+                string query = "SELECT * FROM PaintingLikes WHERE PaintingId=" + id + " AND UserId=" + user.UserId;
                 MySqlDataReader reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
 
                 if (reader.Read())

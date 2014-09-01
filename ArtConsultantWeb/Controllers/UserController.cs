@@ -80,9 +80,9 @@ namespace ArtConsultantWeb.Controllers
                         u.Status.Code = StatusCode.OK;
                         u.Status.Description = DataUtils.OK;
 
-                        query = "SELECT c.*" +
-                            "FROM Users AS u, Collections AS c" +
-                            "WHERE c.UserId = u.UserId AND IsCustom = 0 AND u.Username = \"" + u.Username + "\" AND u.Password = \"" + u.Password + "\"";
+                        query = "SELECT c.* " +
+                            "FROM Users AS u, Collections AS c " +
+                            "WHERE c.UserId = u.UserId AND c.IsCustom = 0 AND u.Username = \"" + user.Username + "\" AND u.Password = \"" + user.Password + "\"";
                         reader.Close();
                         reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
                         if (reader.Read())
@@ -95,9 +95,9 @@ namespace ArtConsultantWeb.Controllers
                             u.MyCollection.Name = DataUtils.getString(reader, "Name");
                             u.MyCollection.CollectionPicture = DataUtils.getString(reader, "CollectionPicture");
 
-                            query = "SELECT p.*, a.*, u1.*, COUNT(pl.UserId) AS LikeCount" +
-                                "FROM (Collections AS c, CollectionPaintings AS cp, Paintings AS p, Users AS u1, Users AS u2, Artists AS a) LEFT JOIN PaintingLikes AS pl ON pl.PaintingId = p.PaintingId" +
-                                "WHERE cp.CollectionId = c.CollectionId AND p.PaintingId = cp.PaintingId AND p.ArtistId = a.ArtistId AND a.UserId = u1.UserId AND c.UserId = u2.UserId AND u2.Username = \"" + u.Username + "\" AND u2.Password = \"" + u.Password + "\"" +
+                            query = "SELECT p.*, a.*, u1.*, COUNT(pl.UserId) AS LikeCount " +
+                                "FROM (Collections AS c, CollectionPaintings AS cp, Paintings AS p, Users AS u1, Users AS u2, Artists AS a) LEFT JOIN PaintingLikes AS pl ON pl.PaintingId = p.PaintingId " +
+                                "WHERE cp.CollectionId = c.CollectionId AND p.PaintingId = cp.PaintingId AND p.ArtistId = a.ArtistId AND a.UserId = u1.UserId AND c.UserId = u2.UserId AND u2.Username = \"" + user.Username + "\" AND u2.Password = \"" + user.Password + "\" " +
                                 "GROUP BY p.PaintingId";
                             reader.Close();
                             reader = (MySqlDataReader)DataUtils.executeQuery(connection, query);
